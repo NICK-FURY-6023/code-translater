@@ -1,9 +1,25 @@
 const fs = require("fs");
 const readline = require("readline");
-const translate = require("google-translate-open-api").default;
+const fetch = require("node-fetch");
 
 const inputFilePath = "music.py";
 const outputFilePath = "music_en.py";
+
+async function translate(text) {
+  const res = await fetch("https://libretranslate.de/translate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      q: text,
+      source: "pt",
+      target: "en",
+      format: "text"
+    }),
+  });
+
+  const data = await res.json();
+  return data.translatedText;
+}
 
 async function translateFile() {
   const rl = readline.createInterface({
@@ -15,35 +31,25 @@ async function translateFile() {
 
   for await (const line of rl) {
     const matches = line.match(/(["'])(?:(?=(\\?))\2.)*?\1/g);
+    let translatedLine = line;
 
     if (matches) {
-      let translatedLine = line;
-
       for (const originalString of matches) {
         const unquoted = originalString.slice(1, -1);
-
         try {
-          const res = await translate(unquoted, {
-            tld: "com",
-            from: "pt",
-            to: "en",
-          });
-
-          const translatedText = res.data[0];
-          translatedLine = translatedLine.replace(originalString, `${originalString[0]}${translatedText}${originalString[0]}`);
-        } catch (error) {
-          console.error("Translation error:", error);
+          const translated = await translate(unquoted);
+          translatedLine = translatedLine.replace(originalString, `${originalString[0]}${translated}${originalString[0]}`);
+        } catch (e) {
+          console.error("Translate error:", e.message);
         }
       }
-
-      outputLines.push(translatedLine);
-    } else {
-      outputLines.push(line);
     }
+
+    outputLines.push(translatedLine);
   }
 
   fs.writeFileSync(outputFilePath, outputLines.join("\n"), "utf8");
-  console.log(`✅ Translation complete! File saved to: ${outputFilePath}`);
+  console.log("✅ Done! Translated file saved:", outputFilePath);
 }
 
 translateFile();
