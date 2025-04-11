@@ -1,9 +1,9 @@
 const fs = require("fs");
 const readline = require("readline");
-const translate = require("@vitalets/google-translate-api");
+const translate = require("@vitalets/google-translate-api").default;
 
-const inputFilePath = "music.py";         // <-- Your original file
-const outputFilePath = "music_en.py";     // <-- Translated output file
+const inputFilePath = "music.py";
+const outputFilePath = "music_en.py";
 
 async function translateFile() {
   const rl = readline.createInterface({
